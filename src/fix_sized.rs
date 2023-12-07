@@ -5,7 +5,7 @@ use std::result::Result;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::vec::Vec as StdVec;
 
-/// A fix-sized lock-free Vector.
+/// A fix-sized, lock-free, append-only Vector.
 pub struct FixSizedVec<T, const N: usize> {
     /// The `AtomicBool` here is used to indicate whether this entry has been
     /// initialized or not, we cannot use `[Option<T>; N]` here as updating a
@@ -49,12 +49,12 @@ impl<T: Debug, const N: usize> Debug for FixSizedVec<T, N> {
 // It is synchronized:
 //
 // * For write:
-
+//
 //   With `UnsafeCell` we can write to the inner value even with an immutable
 //   reference, but multiple threads will write to the same memory.
-
+//
 // * For read:
-
+//
 //   1. Even though the value stored in `MaybeUninit<T>` can be partially initialized,
 //      we won't read it cause we will check the `AtomicBool` flag first before we
 //      access the value.
