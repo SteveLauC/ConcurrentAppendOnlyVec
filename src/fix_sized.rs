@@ -116,22 +116,25 @@ impl<T, const N: usize> FixSizedVec<T, N> {
     /// For uninitialized value, a `None` is returned. Otherwise, return an
     /// reference to the value.
     ///
-    /// We don't need to worry that the value will be modified while holding
-    /// the returned reference as the stored value won't be returned at all.
+    // We don't need to worry that the value will be modified while holding
+    // the returned reference as the stored value won't be modified at all.
     pub fn get(&self, idx: usize) -> Option<&T> {
         if idx >= N {
             return None;
         }
 
-        unsafe {
-            let p = self.array.get();
-            let (val, inited) = &(*p)[idx];
+        let p = self.array.get();
 
-            if inited.load(Ordering::Relaxed) {
-                Some(val.assume_init_ref())
-            } else {
-                None
-            }
+        // SAFETY:
+        // The pointer `p` cannot be dangling or NULL as it comes from `&self`
+        let (val, inited) = &unsafe{&*p}[idx];
+
+        if inited.load(Ordering::Relaxed) {
+            // SAFETY:
+            // It is guaranteed to be initialized as the `inited` flag is true.
+            Some(unsafe{val.assume_init_ref()})
+        } else {
+            None
         }
     }
 }
