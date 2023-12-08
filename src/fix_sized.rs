@@ -155,3 +155,42 @@ impl<T, const N: usize> FixSizedVec<T, N> {
         self.len.load(Ordering::Relaxed)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{sync::Arc, thread::spawn};
+
+    #[test]
+    fn it_works() {
+        let vec = Arc::new(FixSizedVec::<i32, 25>::new());
+        let mut handles = Vec::new();
+
+        for thread_id in 0..5 {
+            handles.push(spawn({
+                let vec = Arc::clone(&vec);
+
+                move || {
+                    for _ in 0..5 {
+                        vec.push(thread_id).unwrap();
+                    }
+                }
+            }));
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        assert_eq!(vec.len(), 25);
+        let mut counter = [0_usize; 5];
+        for idx in 0..25 {
+            let num = *vec.get(idx).unwrap();
+            counter[num as usize] += 1;
+        }
+
+        for item in counter {
+            assert_eq!(item, 5);
+        }
+    }
+}
