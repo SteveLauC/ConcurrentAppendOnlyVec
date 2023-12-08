@@ -1,9 +1,11 @@
-use std::cell::UnsafeCell;
-use std::fmt::{Debug, Formatter};
-use std::mem::MaybeUninit;
-use std::result::Result;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::vec::Vec as StdVec;
+use std::{
+    cell::UnsafeCell,
+    fmt::{Debug, Formatter},
+    mem::MaybeUninit,
+    result::Result,
+    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+    vec::Vec as StdVec,
+};
 
 /// A fix-sized, lock-free, append-only Vector.
 pub struct FixSizedVec<T, const N: usize> {
@@ -67,7 +69,9 @@ unsafe impl<T, const N: usize> Sync for FixSizedVec<T, N> {}
 impl<T, const N: usize> FixSizedVec<T, N> {
     /// Create an empty vector.
     pub fn new() -> Self {
-        let array = std::array::from_fn(|_| (MaybeUninit::uninit(), AtomicBool::new(false)));
+        let array = std::array::from_fn(|_| {
+            (MaybeUninit::uninit(), AtomicBool::new(false))
+        });
         Self {
             array: UnsafeCell::new(array),
             len: AtomicUsize::new(0),
@@ -86,7 +90,12 @@ impl<T, const N: usize> FixSizedVec<T, N> {
 
             if self
                 .len
-                .compare_exchange(snapshot, snapshot + 1, Ordering::Relaxed, Ordering::Relaxed)
+                .compare_exchange(
+                    snapshot,
+                    snapshot + 1,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                )
                 .is_ok()
             {
                 unsafe {
