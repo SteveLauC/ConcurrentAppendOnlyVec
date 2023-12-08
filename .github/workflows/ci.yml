@@ -21,7 +21,14 @@ jobs:
       - name: setup Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
-          components: fmt, clippy
+          components: clippy
+
+      # fmt is not available for nightly, we have to install it manually.
+      #
+      # error: component 'fmt' for target 'x86_64-unknown-linux-gnu' is
+      # unavailable for download for channel 'nightly'
+      - name: install rustfmt
+        run: rustup component add fmt
 
       - name: format check
         run: cargo fmt --all --check
