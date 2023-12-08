@@ -100,11 +100,17 @@ impl<T, const N: usize> FixSizedVec<T, N> {
                 .is_ok()
             {
                 let ptr = self.array.get();
+
                 // SAFETY:
-                // It is safe because the raw pointer comes from `&self` so that it cannot be NULL or dangling.
-                let (entry, inited) = unsafe { &mut *self.array.get() }
-                    .get_mut(snapshot)
-                    .expect("snapshot is a valid index");
+                //
+                // It is safe because
+                //     1. the raw pointer `ptr` comes from `&self` so that it
+                //        cannot be NULL or dangling.
+                //     2. `snapshot` is guaranteed to be valid index as it has
+                //        already been checked.
+                let (entry, inited) =
+                    unsafe { (*ptr).get_unchecked_mut(snapshot) };
+
                 assert!(!inited.load(Ordering::Relaxed));
                 entry.write(val);
                 inited.store(true, Ordering::Relaxed);
