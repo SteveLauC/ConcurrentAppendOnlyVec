@@ -146,4 +146,12 @@ impl<T, const N: usize> FixSizedVec<T, N> {
             None
         }
     }
+
+    /// Return the length.
+    ///
+    /// It is inaccurate due to concurrent appends.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.len.load(Ordering::Relaxed)
+    }
 }
