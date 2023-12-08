@@ -81,6 +81,7 @@ impl<T, const N: usize> FixSizedVec<T, N> {
     /// Push an item to it
     ///
     /// Return `Ok(())` when it is successfully written, `Err(())` when the vector is full.
+    #[allow(clippy::result_unit_err)] // using unit as the err type is ok for demo code
     pub fn push(&self, val: T) -> Result<(), ()> {
         loop {
             let snapshot = self.len.load(Ordering::Relaxed);
@@ -98,13 +99,15 @@ impl<T, const N: usize> FixSizedVec<T, N> {
                 )
                 .is_ok()
             {
-                unsafe {
-                    let ptr = self.array.get();
-                    let (entry, inited) = &mut (*ptr)[snapshot];
-                    assert!(!inited.load(Ordering::Relaxed));
-                    entry.write(val);
-                    inited.store(true, Ordering::Relaxed);
-                }
+                let ptr = self.array.get();
+                // SAFETY:
+                // It is safe because the raw pointer comes from `&self` so that it cannot be NULL or dangling.
+                let (entry, inited) = unsafe { &mut *self.array.get() }
+                    .get_mut(snapshot)
+                    .expect("snapshot is a valid index");
+                assert!(!inited.load(Ordering::Relaxed));
+                entry.write(val);
+                inited.store(true, Ordering::Relaxed);
 
                 return Ok(());
             }
@@ -127,12 +130,12 @@ impl<T, const N: usize> FixSizedVec<T, N> {
 
         // SAFETY:
         // The pointer `p` cannot be dangling or NULL as it comes from `&self`
-        let (val, inited) = &unsafe{&*p}[idx];
+        let (val, inited) = &unsafe { &*p }[idx];
 
         if inited.load(Ordering::Relaxed) {
             // SAFETY:
             // It is guaranteed to be initialized as the `inited` flag is true.
-            Some(unsafe{val.assume_init_ref()})
+            Some(unsafe { val.assume_init_ref() })
         } else {
             None
         }
