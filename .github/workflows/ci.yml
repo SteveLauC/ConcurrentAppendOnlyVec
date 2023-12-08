@@ -1,0 +1,39 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+
+  CI:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup Rust
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: format check
+        run: cargo fmt --all --check
+
+      - name: clippy
+        run: cargo clippy
+
+      - name: install valgrind
+        run: sudo apt-get install -y valgrind
+
+      - name: install cargo-valgrind
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-valgrind
+
+      - name: test
+        run: cargo valgrind test --verbose
